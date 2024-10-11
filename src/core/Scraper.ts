@@ -116,6 +116,27 @@ export default class Scraper {
     return this.removeBlacklistSources(list.flat());
   }
 
+  protected async scrapePages(
+    scrapeFn: (page: number) => Promise<any>,
+    numOfPages: number
+  ) {
+    const list = [];
+
+    for (let page = 1; page <= numOfPages; page++) {
+      const result = await scrapeFn(page);
+      console.log(`Scraped page ${page} [${this.id}]`);
+
+      // @ts-ignore
+      if (result?.length === 0) {
+        break;
+      }
+
+      list.push(result);
+    }
+
+    return this.removeBlacklistSources(list.flat());
+  }
+
   protected async removeBlacklistSources<T extends SourceAnime | SourceManga>(
     sources: T[]
   ) {

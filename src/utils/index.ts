@@ -6,10 +6,12 @@ export const handlePath = (
   baseUrl: string = path.resolve(process.cwd(), "./build/src")
 ) => path.join(baseUrl, filePath);
 
-export const readFile = (filePath: string, basePath?: string) => {
+export const readFile = (filePath: string, basePath?: string): string => {
   const fileDir = handlePath(filePath, basePath);
 
-  if (!fs.existsSync(fileDir)) return null;
+  if (!fs.existsSync(fileDir)) {
+    throw new Error(`File not found: ${fileDir}`);
+  }
 
   return fs.readFileSync(fileDir, "utf-8");
 };
