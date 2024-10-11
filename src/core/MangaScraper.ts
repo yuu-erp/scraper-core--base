@@ -1,9 +1,12 @@
 import { AxiosRequestConfig } from "axios";
-import { RequireAtLeastOne } from "~/type";
+import { MediaType } from "~/types/anilist";
+import { SourceManga } from "~/types/data";
+import { RequireAtLeastOne } from "~/types/utils";
+import { writeFile } from "~/utils";
+import Scraper from "./Scraper";
 
-export class MangaScraper {
-  id: string;
-  name: string;
+export class MangaScraper extends Scraper {
+  type: MediaType.Manga;
   monitorURL: string;
 
   constructor(
@@ -11,12 +14,23 @@ export class MangaScraper {
     name: string,
     axiosConfig: RequireAtLeastOne<AxiosRequestConfig, "baseURL">
   ) {
+    super(id, name, axiosConfig);
+
     this.id = id;
     this.name = name;
     this.monitorURL = axiosConfig.baseURL;
+    this.type = MediaType.Manga;
   }
 
-  async scrapeMangaPage(_page: number): Promise<any> {
+  async scrapeAllMangaPages(): Promise<SourceManga[]> {
+    const data = await this.scrapeAllPages(this.scrapeMangaPage.bind(this));
+
+    writeFile(`./data/${this.id}.json`, JSON.stringify(data, null, 2));
+
+    return data;
+  }
+
+  async scrapeMangaPage(_page: number): Promise<SourceManga[]> {
     throw new Error("scrapeMangaPage Not implemented");
   }
 }
