@@ -39,7 +39,11 @@ export default (program: Command) => {
       });
       console.log("type: ", type);
       const allScrapers = type === "manga" ? scrapers.manga : scrapers.manga;
-      console.log("allScrapers: ", allScrapers);
+      const data = Object.values(allScrapers).map((value) => ({
+        name: value.name,
+        value: value.id,
+      }));
+      console.log("data: ", data);
     });
 };
 
