@@ -1,7 +1,7 @@
 import { select, Separator } from "@inquirer/prompts";
 import { Command } from "commander";
 import { readFile } from "../../utils";
-import scrapers from "~/scrapers";
+import scrapers, { getScraper } from "~/scrapers";
 
 export default (program: Command) => {
   return program
@@ -37,13 +37,16 @@ export default (program: Command) => {
           },
         ],
       });
-      console.log("type: ", type);
       const allScrapers = type === "manga" ? scrapers.manga : scrapers.manga;
-      const data = Object.values(allScrapers).map((value) => ({
+      const dataChoices = Object.values(allScrapers).map((value) => ({
         name: value.name,
         value: value.id,
       }));
-      console.log("data: ", data);
+      const id = await select({
+        message: "What's the ID of the scraper?",
+        choices: dataChoices,
+      });
+      const scraper = getScraper(id);
     });
 };
 

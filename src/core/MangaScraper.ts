@@ -1,7 +1,8 @@
 import { AxiosRequestConfig } from "axios";
-import { RequireAtLeastOne } from "~/type";
+import { Scraper } from "./Scraper";
+import { RequireAtLeastOne } from "~/types/utils";
 
-export class MangaScraper {
+export class MangaScraper extends Scraper {
   id: string;
   name: string;
   monitorURL: string;
@@ -11,6 +12,7 @@ export class MangaScraper {
     name: string,
     axiosConfig: RequireAtLeastOne<AxiosRequestConfig, "baseURL">
   ) {
+    super(id, name, axiosConfig);
     this.id = id;
     this.name = name;
     this.monitorURL = axiosConfig.baseURL;

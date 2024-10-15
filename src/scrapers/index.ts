@@ -32,6 +32,22 @@ const readScrapers = (
 const mangaScrapers: Record<MangaScraperId, MangaScraper> =
   readScrapers("./manga");
 
+export const getMangaScraper = (id: MangaScraperId) => {
+  if (!(id in mangaScrapers)) {
+    throw new Error(`Unknown scraper id: ${id}`);
+  }
+
+  return mangaScrapers[id];
+};
+
+export const getScraper = (id: MangaScraperId) => {
+  if (id in mangaScrapers) {
+    return getMangaScraper(id);
+  }
+
+  throw new Error(`Unknown scraper id: ${id}`);
+};
+
 export default {
   manga: mangaScrapers,
 };
