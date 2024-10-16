@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import Proxy from "./Proxy";
 import logger from "../logger";
 import { RequireAtLeastOne } from "~/types/utils";
+import { SourceAnime, SourceManga } from "~/types/data";
 
 interface Server {
   name: string;
@@ -57,6 +58,7 @@ export class Scraper {
   init() {
     return;
   }
+
   protected async scrapeAllPages(scrapeFn: (page: number) => Promise<any>) {
     const list = [];
     let isEnd = false;
@@ -90,6 +92,35 @@ export class Scraper {
       }
     }
 
-    return;
+    return this.removeBlacklistSources(list.flat());
+  }
+
+  protected async scrapePages(
+    scrapeFn: (page: number) => Promise<any>,
+    numOfPages: number
+  ) {
+    const list = [];
+
+    for (let page = 1; page <= numOfPages; page++) {
+      const result = await scrapeFn(page);
+      console.log(`Scraped page ${page} [${this.id}]`);
+
+      // @ts-ignore
+      if (result?.length === 0) {
+        break;
+      }
+
+      list.push(result);
+    }
+
+    return this.removeBlacklistSources(list.flat());
+  }
+
+  protected async removeBlacklistSources<T extends SourceAnime | SourceManga>(
+    sources: T[]
+  ) {
+    return sources.filter((source) =>
+      source?.titles.some((title) => !this.blacklistTitles.includes(title))
+    );
   }
 }
