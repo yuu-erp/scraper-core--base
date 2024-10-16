@@ -4,10 +4,6 @@ import logger from "../logger";
 import { RequireAtLeastOne } from "~/types/utils";
 import { SourceAnime, SourceManga } from "~/types/data";
 
-interface Server {
-  name: string;
-}
-
 export const DEFAULT_CONFIG: AxiosRequestConfig = {};
 
 export const DEFAULT_MONITOR_INTERVAL = 1_200_000; // 20 minutes
@@ -55,8 +51,8 @@ export class Scraper {
     this.blacklistTitles = ["live action"];
     this.locales = [];
   }
-  init() {
-    return;
+  async init() {
+    console.log("Scraper");
   }
 
   protected async scrapeAllPages(scrapeFn: (page: number) => Promise<any>) {

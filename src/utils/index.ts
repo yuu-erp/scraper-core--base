@@ -3,7 +3,7 @@ import fs from "fs";
 
 export const handlePath = (
   filePath: string,
-  baseUrl: string = path.resolve(process.cwd(), "./build/src")
+  baseUrl: string = path.resolve(process.cwd(), "./src")
 ) => path.join(baseUrl, filePath);
 
 export const readFile = (filePath: string, basePath?: string) => {
@@ -31,3 +31,10 @@ export const writeFile = (
 
   fs.writeFileSync(fileDir, data, { flag: "w" });
 };
+
+export const fulfilledPromises = <T extends Promise<any>>(promises: T[]) =>
+  Promise.allSettled(promises).then((results) =>
+    results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => (result as PromiseFulfilledResult<Awaited<T>>).value)
+  );
