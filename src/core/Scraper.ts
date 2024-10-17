@@ -59,6 +59,17 @@ export class Scraper {
     console.log("Scraper");
   }
 
+  parseTitle(title: string, separators = ["|", ",", ";", "-", "/"]) {
+    const separator = separators.find((separator) => title.includes(separator));
+
+    const regex = new RegExp(`\\${separator}\\s+`);
+
+    return title
+      .split(regex)
+      .map((title) => title.trim())
+      .filter((title) => title);
+  }
+
   protected async scrapeAllPages(scrapeFn: (page: number) => Promise<any>) {
     const list = [];
     let isEnd = false;
@@ -70,7 +81,7 @@ export class Scraper {
           logger.error("error", err)
         );
 
-        if (!result) {
+        if (!result || page === 2) {
           isEnd = true;
 
           break;
