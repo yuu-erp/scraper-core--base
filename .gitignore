@@ -33,3 +33,5 @@ build/
 .yarn-lock
 
 yarn.lock
+
+*data/

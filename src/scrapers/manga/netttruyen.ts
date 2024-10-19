@@ -43,7 +43,6 @@ export default class MangaNettruyenScraper extends MangaScraper {
     return {
       sourceId: this.id,
       sourceMediaId: sourceId,
-      titles: allTitles,
     };
   }
 
