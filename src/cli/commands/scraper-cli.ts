@@ -53,42 +53,26 @@ export default (program: Command) => {
         await scraper.init();
 
         const mangaScraper = scraper as MangaScraper;
-        const sources = await mangaScraper.scrapeAllMangaPages();
-        console.log("sources: ", sources);
+        const sources = await readFileAndFallback(`./data/${id}.json`, () =>
+          mangaScraper.scrapeAllMangaPages()
+        );
+        const mergedSources = await readFileAndFallback(
+          `./data/${id}-full.json`,
+          () => mangaScraper.scrapeAnilist(sources)
+        );
         console.log("Scraper init successfully");
       } catch (err) {
         logger.error(err);
       }
     });
 };
-
-const readFileAndFallback = async <T>(
+const readFileAndFallback = <T>(
   path: string,
   fallbackFn?: () => Promise<T>
-): Promise<T | undefined> => {
-  return await fallbackFn?.();
-  // try {
-  //   const fileContent = readFile(path);
-  // // Check if fileContent is empty or undefined
-  // if (!fileContent) {
-  //   if (fallbackFn) {
-  //     console.log(`File not found. Executing fallback function.`);
-  //     return await fallbackFn();
-  //   }
-  //   return undefined;
-  // }
-
-  // // Attempt to parse the file content
-  // return JSON.parse(fileContent) as T;
-  // } catch (error) {
-  //   console.error(`Error parsing JSON from ${path}: ${error}`);
-
-  //   // Fallback if JSON parsing fails
-  //   if (fallbackFn) {
-  //     console.log(`Falling back to function due to error.`);
-  //     return await fallbackFn();
-  //   }
-
-  //   return undefined;
-  // }
+) => {
+  const readFileData = readFile(path);
+  if (!readFileData) return fallbackFn?.();
+  const fileContent: T = JSON.parse(readFileData);
+  if (!fileContent) return fallbackFn?.();
+  return fileContent;
 };

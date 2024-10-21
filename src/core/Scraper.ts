@@ -4,6 +4,7 @@ import logger from "../logger";
 import { RequireAtLeastOne } from "~/types/utils";
 import { SourceAnime, SourceManga } from "~/types/data";
 import { PuppeteerScraper } from "./PuppeteerScraper";
+import { isVietnamese } from "~/utils";
 
 export const DEFAULT_CONFIG: AxiosRequestConfig = {};
 
@@ -68,6 +69,25 @@ export class Scraper {
       .split(regex)
       .map((title) => title.trim())
       .filter((title) => title);
+  }
+
+  /**
+   *
+   * @param titles an array of titles
+   * @returns titles that are not Vietnamese and a Vietnamese title
+   */
+  protected filterTitles(titles: string[]) {
+    const totalTitles = [...new Set(titles)].filter(
+      (title) => !this.blacklistTitles.includes(title.toLowerCase())
+    );
+    const vietnameseTitle = totalTitles.filter(isVietnamese)[0] || null;
+    const nonVietnameseTitles = totalTitles.filter(
+      (title) => !isVietnamese(title)
+    );
+    return {
+      titles: nonVietnameseTitles,
+      vietnameseTitle,
+    };
   }
 
   protected async scrapeAllPages(scrapeFn: (page: number) => Promise<any>) {

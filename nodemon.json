@@ -1,6 +1,0 @@
-{
-  "watch": ["src", ".env"],
-  "ext": ".ts,.js",
-  "ignore": [],
-  "exec": "ts-node ./src/cli/index.ts generate"
-}
