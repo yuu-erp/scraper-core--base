@@ -3,7 +3,6 @@ import Proxy from "./Proxy";
 import logger from "../logger";
 import { RequireAtLeastOne } from "~/types/utils";
 import { SourceAnime, SourceManga } from "~/types/data";
-import { PuppeteerScraper } from "./PuppeteerScraper";
 import { isVietnamese } from "~/utils";
 
 export const DEFAULT_CONFIG: AxiosRequestConfig = {};
@@ -23,7 +22,6 @@ export class Scraper {
   disableMonitor: boolean;
   proxy: Proxy;
   locales: string[];
-  puppeteerScraper: PuppeteerScraper; // Puppeteer scraper instance
 
   constructor(
     id: string,
@@ -54,7 +52,6 @@ export class Scraper {
     });
     this.blacklistTitles = ["live action"];
     this.locales = [];
-    this.puppeteerScraper = new PuppeteerScraper(); // Initialize PuppeteerScraper
   }
   async init() {
     console.log("Scraper");
