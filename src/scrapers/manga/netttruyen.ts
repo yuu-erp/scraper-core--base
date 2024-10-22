@@ -1,19 +1,18 @@
 import * as cheerio from "cheerio";
 
-import { GetImagesQuery, MangaScraper } from "~/core/MangaScraper";
+import MangaScraper, { GetImagesQuery } from "~/core/MangaScraper";
 import logger from "~/logger";
 import { SourceChapter, SourceManga } from "~/types/data";
 import { fulfilledPromises } from "~/utils";
 
 export default class MangaNettruyenScraper extends MangaScraper {
   constructor() {
-    super("netttruyen", "Nettruyen", { baseURL: "https://nettruyenviet.com/" });
+    super("netttruyen", "Nettruyen", { baseURL: "https://nettruyenviet.com" });
   }
 
   async scrapeMangaPage(page: number): Promise<SourceManga[]> {
     try {
       const { data } = await this.client.get("/?page=" + page);
-
       const $ = cheerio.load(data);
       const mangaList = $(".items .item");
 
@@ -22,7 +21,6 @@ export default class MangaNettruyenScraper extends MangaScraper {
           const manga = $(el);
 
           const slug = this.urlToSourceId(manga.find("a").attr("href") || "");
-
           return this.scrapeManga(slug);
         })
       );
@@ -40,19 +38,9 @@ export default class MangaNettruyenScraper extends MangaScraper {
     const blacklistKeys = ["truyện chữ"];
 
     const mainTitle = $(".title-detail").text().trim();
+
     const altTitle = this.parseTitle($(".other-name").text().trim());
-
-    const allTitles = [mainTitle, ...altTitle];
-
-    const { titles } = this.filterTitles(allTitles);
-
-    if (
-      allTitles.some((title) =>
-        blacklistKeys.some((key) => title.toLowerCase().includes(key))
-      )
-    ) {
-      return null;
-    }
+    const titles = [mainTitle, ...altTitle];
 
     const chapters: SourceChapter[] = $("div.chapter")
       .toArray()
@@ -110,8 +98,6 @@ export default class MangaNettruyenScraper extends MangaScraper {
   urlToSourceId(url: string) {
     const splitted = url.split("/");
     const slug = splitted[splitted.length - 1];
-    const slugSplitted = slug.split("-");
-
-    return slugSplitted.slice(0, slugSplitted.length - 1).join("-");
+    return slug;
   }
 }

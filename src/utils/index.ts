@@ -45,3 +45,16 @@ export const isVietnamese = (text: string) => {
 
   return REGEX.test(text.toLowerCase());
 };
+
+// check if the url is valid
+export const isValidUrl = (text: string) => {
+  let url: URL;
+
+  try {
+    url = new URL(text);
+  } catch (_) {
+    return false;
+  }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+};

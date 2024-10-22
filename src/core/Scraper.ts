@@ -1,15 +1,20 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
-import Proxy from "./Proxy";
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
+import { errorLogger } from "axios-logger";
+import axiosRetry from "axios-retry";
+import { match, Path } from "node-match-path";
 import logger from "../logger";
+import { SourceAnime, SourceManga } from "../types/data";
+import Proxy from "./Proxy";
+import { isValidUrl, isVietnamese } from "~/utils";
 import { RequireAtLeastOne } from "~/types/utils";
-import { SourceAnime, SourceManga } from "~/types/data";
-import { isVietnamese } from "~/utils";
+interface Server {
+  name: string;
+}
 
 export const DEFAULT_CONFIG: AxiosRequestConfig = {};
 
 export const DEFAULT_MONITOR_INTERVAL = 1_200_000; // 20 minutes
-
-export class Scraper {
+export default class Scraper {
   client: AxiosInstance;
   id: string;
   name: string;
@@ -26,7 +31,7 @@ export class Scraper {
   constructor(
     id: string,
     name: string,
-    axiosConfig: RequireAtLeastOne<AxiosRequestConfig, "baseURL">
+    axiosConfig?: RequireAtLeastOne<AxiosRequestConfig, "baseURL">
   ) {
     const config = {
       headers: {
@@ -51,21 +56,39 @@ export class Scraper {
       origin: axiosConfig.baseURL,
     });
     this.blacklistTitles = ["live action"];
-    this.locales = [];
+
+    axiosRetry(this.client, { retries: 3 });
+
+    const axiosErrorLogger = (error: AxiosError) => {
+      return errorLogger(error, {
+        logger: logger.error.bind(logger),
+      });
+    };
+
+    this.client.interceptors.request.use((config) => config, axiosErrorLogger);
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      axiosErrorLogger
+    );
   }
-  async init() {
-    console.log("Scraper");
+
+  /**
+   * Run this method to push scraper's info to Supabase
+   */
+  init() {
+    return;
   }
 
-  parseTitle(title: string, separators = ["|", ",", ";", "-", "/"]) {
-    const separator = separators.find((separator) => title.includes(separator));
-
-    const regex = new RegExp(`\\${separator}\\s+`);
-
-    return title
-      .split(regex)
-      .map((title) => title.trim())
-      .filter((title) => title);
+  /**
+   * The monitor will run this method to check if the monitor should run onChange
+   * (defined in cron/fetch)
+   * @param oldPage old page that the monitor requested before
+   * @param newPage new page that the monitor just requested
+   * @returns boolean to let the monitor decided if the onChange function should run.
+   */
+  shouldMonitorChange(_oldPage: any, _newPage: any): boolean {
+    return false;
   }
 
   /**
@@ -77,14 +100,53 @@ export class Scraper {
     const totalTitles = [...new Set(titles)].filter(
       (title) => !this.blacklistTitles.includes(title.toLowerCase())
     );
+
     const vietnameseTitle = totalTitles.filter(isVietnamese)[0] || null;
     const nonVietnameseTitles = totalTitles.filter(
       (title) => !isVietnamese(title)
     );
+
     return {
       titles: nonVietnameseTitles,
       vietnameseTitle,
     };
+  }
+
+  /**
+   * Separate the title in case the title has multiple titles (e.g. "One Piece | Vua Hải Tặc")
+   * @param title string
+   * @param separators an array of separators
+   * @returns an array of titles
+   */
+  parseTitle(title: string, separators = ["|", ",", ";", "-", "/"]) {
+    const separator = separators.find((separator) => title.includes(separator));
+
+    const regex = new RegExp(`\\${separator}\\s+`);
+
+    return title
+      .split(regex)
+      .map((title) => title.trim())
+      .filter((title) => title);
+  }
+
+  protected async scrapePages(
+    scrapeFn: (page: number) => Promise<any>,
+    numOfPages: number
+  ) {
+    const list = [];
+
+    for (let page = 1; page <= numOfPages; page++) {
+      const result = await scrapeFn(page);
+      console.log(`Scraped page ${page} [${this.id}]`);
+
+      if (result?.length === 0) {
+        break;
+      }
+
+      list.push(result);
+    }
+
+    return this.removeBlacklistSources(list.flat());
   }
 
   protected async scrapeAllPages(scrapeFn: (page: number) => Promise<any>) {
@@ -123,25 +185,47 @@ export class Scraper {
     return this.removeBlacklistSources(list.flat());
   }
 
-  protected async scrapePages(
-    scrapeFn: (page: number) => Promise<any>,
-    numOfPages: number
+  /**
+   * Get the best server based on the priority list
+   * @param servers an array of servers
+   * @param priorityServers an array of servers that define the priority of them (E.g. ['Server 1', 'Server 2', 'Server 3'])
+   * @param getSources a function that returns the sources of the best server
+   * @returns sources
+   */
+  protected async getBestSources<T extends Server, R>(
+    servers: T[],
+    priorityServers: string[],
+    getSources: (server: T) => Promise<R>
   ) {
-    const list = [];
+    const availablePriorityServers = priorityServers.filter((priority) =>
+      servers.map((server) => server.name).includes(priority)
+    );
 
-    for (let page = 1; page <= numOfPages; page++) {
-      const result = await scrapeFn(page);
-      console.log(`Scraped page ${page} [${this.id}]`);
+    if (!availablePriorityServers?.length) return null;
 
-      // @ts-ignore
-      if (result?.length === 0) {
-        break;
-      }
+    for (const priorityServer of availablePriorityServers) {
+      const server = servers.find((server) => server.name === priorityServer);
 
-      list.push(result);
+      const sources = await getSources(server);
+
+      if (sources) return sources;
     }
 
-    return this.removeBlacklistSources(list.flat());
+    return null;
+  }
+
+  /**
+   *
+   * @param path pattern of the parser (e.g. /anime/:id)
+   * @param url the url or path (e.g. /anime/23)
+   * @returns object with the matched params (e.g. { id: 23 })
+   */
+  protected parseString(path: Path, url: string) {
+    if (isValidUrl(url)) {
+      url = new URL(url).pathname;
+    }
+
+    return match(path, url).params;
   }
 
   protected async removeBlacklistSources<T extends SourceAnime | SourceManga>(

@@ -2,8 +2,8 @@ import { select, Separator } from "@inquirer/prompts";
 import { Command } from "commander";
 import { readFile } from "../../utils";
 import scrapers, { getScraper } from "~/scrapers";
-import { MangaScraper } from "~/core/MangaScraper";
 import logger from "~/logger";
+import MangaScraper from "~/core/MangaScraper";
 
 export default (program: Command) => {
   return program
@@ -56,10 +56,10 @@ export default (program: Command) => {
         const sources = await readFileAndFallback(`./data/${id}.json`, () =>
           mangaScraper.scrapeAllMangaPages()
         );
-        const mergedSources = await readFileAndFallback(
-          `./data/${id}-full.json`,
-          () => mangaScraper.scrapeAnilist(sources)
-        );
+        // const mergedSources = await readFileAndFallback(
+        //   `./data/${id}-full.json`,
+        //   () => mangaScraper.scrapeAnilist(sources)
+        // );
         console.log("Scraper init successfully");
       } catch (err) {
         logger.error(err);

@@ -1,12 +1,12 @@
-import { AxiosHeaders } from "axios";
+import { AxiosHeaders, AxiosRequestHeaders } from "axios";
 import "dotenv/config";
 
-export type Headers = InstanceType<typeof AxiosHeaders>;
+export type Headers = AxiosRequestHeaders;
 
 export default class Proxy {
   headers: Headers;
 
-  constructor(headers: Record<string, string>) {
-    this.headers = new AxiosHeaders(headers);
+  constructor(headers: { [key: string]: string }) {
+    this.headers = AxiosHeaders.from(headers) as AxiosRequestHeaders;
   }
 }
