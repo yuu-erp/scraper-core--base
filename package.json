@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "dev": "tsx ./src/cli/index.ts scraper",
+    "s": "tsx ./src/cli/index.ts scraper",
+    "g": "tsx ./src/cli/index.ts generate",
     "build": "rimraf ./dist && tsc && tsc-alias",
     "start": "node dist/index.js",
     "lint": "eslint .",

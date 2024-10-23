@@ -35,8 +35,6 @@ export default class MangaNettruyenScraper extends MangaScraper {
 
     const $ = cheerio.load(data);
 
-    const blacklistKeys = ["truyện chữ"];
-
     const mainTitle = $(".title-detail").text().trim();
 
     const altTitle = this.parseTitle($(".other-name").text().trim());

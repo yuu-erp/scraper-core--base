@@ -58,3 +58,83 @@ export const isValidUrl = (text: string) => {
 
   return url.protocol === "http:" || url.protocol === "https:";
 };
+
+type StringSimilarityOptions = {
+  trimByString: string | RegExp;
+  caseSensitive: boolean;
+};
+
+// https://github.com/17gstyron/useless-utils/blob/master/stringSimilarity.js
+export const stringSimilarity = (
+  stringOne: string,
+  stringTwo: string,
+  options: StringSimilarityOptions = {
+    caseSensitive: true,
+    trimByString: /\s/g,
+  }
+) => {
+  const { trimByString = /\s/g, caseSensitive = true } = options;
+
+  stringOne = stringOne.replace(trimByString, "");
+  stringTwo = stringTwo.replace(trimByString, "");
+
+  if (!caseSensitive) {
+    stringOne = stringOne.toLowerCase();
+    stringTwo = stringTwo.toLowerCase();
+  }
+
+  if (!stringOne.length && !stringTwo.length) return 1;
+  if (!stringOne.length || !stringTwo.length) return 0;
+  if (stringOne === stringTwo) return 1;
+  if (stringOne.length === 1 && stringTwo.length === 1) return 0;
+  if (stringOne.length < 2 || stringTwo.length < 2) return 0;
+
+  const firstBigrams = new Map();
+  for (let i = 0; i < stringOne.length - 1; i++) {
+    const bigram = stringOne.substring(i, i + 2);
+    const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) + 1 : 1;
+
+    firstBigrams.set(bigram, count);
+  }
+
+  let intersectionSize = 0;
+  for (let i = 0; i < stringTwo.length - 1; i++) {
+    const bigram = stringTwo.substring(i, i + 2);
+    const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) : 0;
+
+    if (count > 0) {
+      firstBigrams.set(bigram, count - 1);
+      intersectionSize++;
+    }
+  }
+
+  return (2.0 * intersectionSize) / (stringOne.length + stringTwo.length - 2);
+};
+
+// https://github.com/aceakash/string-similarity/blob/2718c82bbbf5190ebb8e9c54d4cbae6d1259527a/compare-strings.js#L42
+export const findBestMatch = (mainString: string, targetStrings: string[]) => {
+  targetStrings = targetStrings.filter((title) => title);
+
+  type Rating = {
+    target: string;
+    rating: number;
+  };
+
+  const ratings: Rating[] = [];
+  let bestMatchIndex = 0;
+
+  for (let i = 0; i < targetStrings.length; i++) {
+    const currentTargetString = targetStrings[i];
+    const currentRating = stringSimilarity(mainString, currentTargetString);
+
+    ratings.push({ target: currentTargetString, rating: currentRating });
+
+    if (currentRating > ratings[bestMatchIndex].rating) {
+      bestMatchIndex = i;
+    }
+  }
+
+  const bestMatch = ratings[bestMatchIndex];
+
+  return { ratings, bestMatch, bestMatchIndex };
+};

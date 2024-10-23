@@ -1,4 +1,4 @@
-import { MangaScraper } from "~/core/MangaScraper";
+import MangaScraper from "~/core/MangaScraper";
 
 export default class Manga__name__Scraper extends MangaScraper {
   constructor() {

@@ -1,0 +1,23 @@
+services:
+  mange_db:
+    container_name: mange_db
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
+      POSTGRES_USER: ${DATABASE_USER:-user}
+      POSTGRES_DB: ${DATABASE_DB:-mange_db}
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - x_db_data:/var/lib/postgresql/data
+    networks:
+      - manga_network
+    restart: on-failure
+
+volumes:
+  manga_db_data:
+
+
+networks:
+  manga_network:
+    driver: bridge
